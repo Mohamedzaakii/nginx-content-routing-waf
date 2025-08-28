@@ -44,9 +44,9 @@ nginx-content-routing-waf/
 
 ## Deployment Steps
 
-### 1. Install Nginx on LB and backends:
-
 ```bash
+
+1. Install Nginx on LB and backends:
 sudo dnf -y install nginx openssl
 sudo systemctl enable --now nginx
 
