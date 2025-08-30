@@ -1,103 +1,111 @@
-# Nginx Content Routing & WAF-Lite Gateway 
+🚀 Nginx Content Routing & WAF-Lite Gateway
 
-## Project Overview
+A professional Nginx Reverse Proxy & Load Balancer setup with advanced gateway features for security, performance, and monitoring.
 
-This project demonstrates a professional **Nginx reverse proxy/load balancer** setup with advanced features:
- 
-- HTTPS termination (self-signed certificate)
-- Path-based routing (`/api/` goes to backend 129)
-- Load balancing across two backend servers using `least_conn`
-- Proxy caching for static assets
-- Per-IP rate limiting
-- WAF-lite: basic blocking of common SQLi/XSS patterns
-- Custom log format with upstream metadata
-- Stub status endpoint `/nginx_status` for monitoring
-- Fault tolerance with `proxy_next_upstream` and backend fail detection
-- Custom error pages (50x)
-- Log rotation configuration
+✨ Features
 
-**Deployed on 3 RHEL VMs:**
-- Load Balancer / Nginx Gateway: `192.168.145.130`  
-- Backend 1: `192.168.145.129`  
-- Backend 2: `192.168.145.131` 
+🔒 HTTPS termination (self-signed TLS certificate)
 
-## Folder Structure
+🔀 Path-based routing (/api/ → backend 129)
 
+⚖️ Load balancing (least_conn algorithm)
+
+⚡ Proxy caching for static assets
+
+🛡️ Rate limiting per IP
+
+🔍 WAF-lite filtering for basic SQLi/XSS patterns
+
+📊 Custom log format with upstream metadata
+
+📡 Stub status endpoint (/nginx_status) for monitoring
+
+♻️ Fault tolerance with proxy_next_upstream + backend failover
+
+🎨 Custom error pages (50x)
+
+🗂️ Log rotation for Nginx logs
+
+🏗️ Architecture
+
+Deployment on 3 RHEL VMs:
+
+Load Balancer / Gateway: 192.168.145.130
+
+Backend 1: 192.168.145.129
+
+Backend 2: 192.168.145.131
+           ┌──────────────┐
+           │   Clients    │
+           └──────┬───────┘
+                  │
+                  ▼
+          ┌─────────────────┐
+          │ Nginx Gateway   │
+          │ 192.168.145.130 │
+          └──────┬───────┬──┘
+                 │       │
+   ┌─────────────┘       └─────────────┐
+   ▼                                   ▼
+Backend 1                          Backend 2
+192.168.145.129                   192.168.145.131
+
+📂 Project Structure
 nginx-content-routing-waf/
 ├── README.md
 ├── lb/
-│ ├── nginx.conf
-│ └── conf.d/gateway.conf
+│   ├── nginx.conf
+│   └── conf.d/gateway.conf
 ├── backends/
-│ ├── site_v1_index.html
-│ ├── site_v2_index.html
-│ └── somefile.js
+│   ├── site_v1_index.html
+│   ├── site_v2_index.html
+│   └── somefile.js
+├── scripts/                 # Deployment automation
+│   ├── setup_lb.sh
+│   ├── setup_backend1.sh
+│   ├── setup_backend2.sh
+│   └── generate_certs.sh
 ├── docs/
-│ ├── TEST_STEPS.md
-│ └── CERTS_GUIDE.md
-│ └── limits.yaml
+│   ├── TEST_STEPS.md
+│   ├── CERTS_GUIDE.md
+│   └── limits.yaml
 └── logrotate/
-└── nginx-custom
+    └── nginx-custom
+
+⚙️ Deployment
+
+Instead of copy-pasting commands, deployment is automated via scripts.
+
+1️⃣ Install and Configure Nginx
+
+Run on Load Balancer:
+./scripts/setup_lb.sh
+
+Run on Backend 1 (129):
+./scripts/setup_backend1.sh
+
+Run on Backend 2 (131):
+./scripts/setup_backend2.sh
+
+2️⃣ Generate Self-Signed TLS Certificate
+./scripts/generate_certs.sh
+
+🧪 Testing & Verification
+
+   - HTTPS & Backend Routing
+     curl -vk -H "Host: site1.local" https://192.168.145.130/api/
+   - Load Balancing
+     curl -vk -H "Host: site1.local" https://192.168.145.130/
+   - Proxy Caching
+     curl -sSI -k https://192.168.145.130/somefile.js | egrep 'X-Cache-Status|HTTP/'
+   - WAF-lite Filtering
+     curl -vk -G -s -k "https://192.168.145.130/?q=select+from"
+   - Rate Limiting
+     for i in {1..20}; do curl -s -k https://192.168.145.130/; done
+📜 Documentation
+   - TEST_STEPS.md
+   - CERTS_GUIDE.md
+   - limits.yaml
 
 
----
 
-## Deployment Steps
-
-```bash
-
-1. Install Nginx on LB and backends:
-sudo dnf -y install nginx openssl
-sudo systemctl enable --now nginx
-
-2. Place configuration files
-
-- LB VM:
-
-sudo cp lb/nginx.conf /etc/nginx/nginx.conf
-sudo cp lb/conf.d/gateway.conf /etc/nginx/conf.d/gateway.conf
-sudo nginx -t && sudo systemctl restart nginx
-
-- Backends (129 & 131):
- 
-sudo mkdir -p /usr/share/nginx/html
-sudo cp backends/site_v1_index.html /usr/share/nginx/html/index.html  # backend 129
-sudo cp backends/site_v2_index.html /usr/share/nginx/html/index.html  # backend 131
-sudo cp backends/somefile.js /usr/share/nginx/html/
-sudo nginx -t && sudo systemctl reload nginx
-
-3. Create self-signed certificate
-
-sudo mkdir -p /etc/ssl/nginx
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout /etc/ssl/nginx/nginx.key \
-    -out /etc/ssl/nginx/nginx.crt \
-    -subj "/CN=nginx-demo"
-
-- Ensure permissions:
-
-sudo chown root:root /etc/ssl/nginx/nginx.*
-sudo chmod 600 /etc/ssl/nginx/nginx.key
-sudo chmod 644 /etc/ssl/nginx/nginx.crt
-
-## Testing / Verification
-
-- HTTPS & backend routing:
-
-curl -vk -H "Host: site1.local" https://192.168.145.130/api/
-
-- Load balancing:
-
-curl -vk -H "Host: site1.local" https://192.168.145.130/
-
-- Proxy caching:
-
-curl -sSI -k https://192.168.145.130/somefile.js | egrep 'X-Cache-Status|HTTP/'
-
-- WAF-lite rule:
-
-curl -vk -G -s -k "https://192.168.145.130/?q=select+from"
-
-- Rate limiting: 
-
-for i in {1..20}; do curl -s -k https://192.168.145.130/; done
