@@ -43,8 +43,15 @@ Backend 1                          Backend 2
 192.168.145.129                   192.168.145.131
 
 ```
-## 📂 Project Structure
+## 📷 Deployment Verification
+- **1. Nginx Status Page**
+![](lb/images/nginx-status.png)
 
+- **2. API Test Result**
+![](lb/images/api-test.png)
+
+ 
+## 📂 Project Structure
 
 ```text
 nginx-content-routing-waf/
